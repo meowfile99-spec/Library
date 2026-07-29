@@ -1,3 +1,4 @@
+--
 local LoadingTick = os.clock()
 
 if getgenv().Library then
@@ -1910,9 +1911,7 @@ local Library do
                     local success, result = pcall(function()
                         return Data.Callback(newToggled)
                     end)
-                    if success == false then
-                        proceed = false
-                    elseif result == false then
+                    if not success or result == false then
                         proceed = false
                     end
                 end
