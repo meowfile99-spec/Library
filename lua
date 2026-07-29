@@ -1,6 +1,3 @@
--- made by samet september 14 2025
--- example at bottom
-
 local LoadingTick = os.clock()
 
 if getgenv().Library then
@@ -1898,23 +1895,38 @@ local Library do
             end
 
             function Keybind:Press(Bool)
+                local newToggled = Keybind.Toggled
+
                 if Keybind.Mode == "Toggle" then 
-                    Keybind.Toggled = not Keybind.Toggled
+                    newToggled = not Keybind.Toggled
                 elseif Keybind.Mode == "Hold" then 
-                    Keybind.Toggled = Bool
+                    newToggled = Bool
                 elseif Keybind.Mode == "Always On" then 
-                    Keybind.Toggled = true
+                    newToggled = true
                 end
 
+                local proceed = true
+                if Data.Callback then 
+                    local success, result = pcall(function()
+                        return Data.Callback(newToggled)
+                    end)
+                    if success == false then
+                        proceed = false
+                    elseif result == false then
+                        proceed = false
+                    end
+                end
+
+                if not proceed then
+                    return
+                end
+
+                Keybind.Toggled = newToggled
                 Library.Flags[Keybind.Flag] = {
                     Mode = Keybind.Mode,
                     Key = Keybind.Key,
                     Toggled = Keybind.Toggled
                 }
-
-                if Data.Callback then 
-                    Library:SafeCall(Data.Callback, Keybind.Toggled)
-                end
 
                 Update()
             end
