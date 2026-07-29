@@ -1,14 +1,3 @@
---[[
-    2/22/2026
-    Library.lua
-    Purpose:
-        NH ui library
-
-    Author: @joestar._3
-    Dependencies:
-        None
-]]
-
 -- hi guys
 
 if getgenv().Library and getgenv().Library.Exit then
@@ -8248,9 +8237,12 @@ do
 
             local Items = {}
             do
+                local SectionParent = Section.Page.ColumnsData and Section.Page.ColumnsData[Section.Side]
+                    or (Section.Page.Items and Section.Page.Items["Columns"])
+
                 Items["SectionOutline"] = Library:Create("Frame", {
                     Name = "\0",
-                    Parent = Section.Page.ColumnsData[Section.Side].Instance,
+                    Parent = SectionParent and SectionParent.Instance,
                     Size = UDim2.new(1, 0, 0, 20),
                     BorderSizePixel = 0,
                     AutomaticSize = Enum.AutomaticSize.Y,
