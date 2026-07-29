@@ -1,4 +1,4 @@
---
+--------
 local LoadingTick = os.clock()
 
 if getgenv().Library then
@@ -1608,6 +1608,8 @@ local Library do
                 KeyListItem:SetText(Data.Name, Keybind.Mode)
                 KeyListItem:Set(Keybind.Toggled)
             end
+
+            Keybind.Update = Update
 
             function Keybind:SetMode(Mode)
                 Keybind.Mode = Mode
@@ -3535,22 +3537,53 @@ local Library do
             end
 
             function Toggle:Set(Value)
+                local oldValue = Toggle.Value
                 Toggle.Value = Value 
                 Library.Flags[Toggle.Flag] = Value 
 
-                if Toggle.Value then 
-                    Items["Indicator"]:ChangeItemTheme({BackgroundColor3 = "Accent"})
-                    Items["Indicator"]:Tween(nil, {BackgroundColor3 = Library.Theme.Accent})
-                else
-                    Items["Indicator"]:ChangeItemTheme({BackgroundColor3 = function()
-                        return FromRGB(20, 20, 20)
-                    end})
-                    Items["Indicator"]:Tween(nil, {BackgroundColor3 = FromRGB(20, 20, 20)})
+                local function updateIndicator()
+                    if Toggle.Value then 
+                        Items["Indicator"]:ChangeItemTheme({BackgroundColor3 = "Accent"})
+                        Items["Indicator"]:Tween(nil, {BackgroundColor3 = Library.Theme.Accent})
+                    else
+                        Items["Indicator"]:ChangeItemTheme({BackgroundColor3 = function()
+                            return FromRGB(20, 20, 20)
+                        end})
+                        Items["Indicator"]:Tween(nil, {BackgroundColor3 = FromRGB(20, 20, 20)})
+                    end
+                end
+
+                updateIndicator()
+
+                if Toggle.Keybind then
+                    Toggle.Keybind.Toggled = Toggle.Value
+                    Library.Flags[Toggle.Keybind.Flag] = Library.Flags[Toggle.Keybind.Flag] or {}
+                    Library.Flags[Toggle.Keybind.Flag].Toggled = Toggle.Value
+                    if Toggle.Keybind.Update then
+                        Toggle.Keybind.Update()
+                    end
                 end
 
                 if Toggle.Callback then 
-                    Library:SafeCall(Toggle.Callback, Toggle.Value)
+                    local success, result = pcall(Toggle.Callback, Toggle.Value)
+                    if not success or result == false then
+                        Toggle.Value = oldValue
+                        Library.Flags[Toggle.Flag] = oldValue
+                        updateIndicator()
+
+                        if Toggle.Keybind then
+                            Toggle.Keybind.Toggled = Toggle.Value
+                            Library.Flags[Toggle.Keybind.Flag].Toggled = Toggle.Value
+                            if Toggle.Keybind.Update then
+                                Toggle.Keybind.Update()
+                            end
+                        end
+
+                        return false
+                    end
                 end
+
+                return true
             end
 
             function Toggle:SetVisibility(Bool)
@@ -3587,8 +3620,6 @@ local Library do
             function Toggle:Keybind(Data)
                 Data = Data or { }
 
-local originalCallback = Data.Callback or Data.callback or function() end
-
             local Keybind = {
                 Window = Toggle.Window,
                 Page = Toggle.Page,
@@ -3598,11 +3629,10 @@ local originalCallback = Data.Callback or Data.callback or function() end
                 Flag = Data.Flag or Data.flag or Library:NextFlag(),
                 Default = Data.Default or Data.default or Enum.KeyCode.RightShift,
                 Callback = function(Value)
-                    Toggle:Set(Value)
-                    originalCallback(Value)
+                    return Toggle:Set(Value)
                 end,
-                    Mode = Data.Mode or Data.mode or "Toggle",
-                }
+                Mode = Data.Mode or Data.mode or "Toggle",
+            }
 
                 local NewKeybind = Library:CreateKeybind({
                     Name = Keybind.Name,
@@ -3614,6 +3644,7 @@ local originalCallback = Data.Callback or Data.callback or function() end
                     Callback = Keybind.Callback
                 })
 
+                Toggle.Keybind = NewKeybind
                 return NewKeybind
             end
 
